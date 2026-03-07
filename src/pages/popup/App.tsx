@@ -134,7 +134,7 @@ export default function App() {
 
   return (
     <div>
-      <h1>HelloWorld1</h1>
+      <h1>Выписка из Ozon банка</h1>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
         <label>
           Дата начала:
@@ -155,7 +155,7 @@ export default function App() {
           />
         </label>
       </div>
-      <button onClick={onClick}>Открыть страницу</button>
+      <button onClick={onClick}>Экспортировать</button>
     </div>
   );
 }

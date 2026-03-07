@@ -37,6 +37,14 @@ const formatMoney = (value: number, currency?: string) => {
   return `${sign}${formatted}${currency ? ` ${currency}` : ""}`;
 };
 
+const escapeCsvCell = (value: unknown) => {
+  const s = value === null || value === undefined ? "" : String(value);
+  if (/[;"\n\r]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+};
+
 export default function App() {
   const [data, setData] = useState<OperationItem[]>([]);
 
@@ -78,9 +86,80 @@ export default function App() {
     return { debit, credit, total, currency };
   }, [rows]);
 
+  const handleExportCsv = () => {
+    if (rows.length === 0) return;
+
+    const header = [
+      "Дата (локальная)",
+      "Название",
+      "Цель",
+      "Категория",
+      "Дебит",
+      "Кредит",
+      "Итого",
+      "Валюта",
+    ];
+
+    const lines = [
+      header.join(";"),
+      ...rows.map((r) =>
+        [
+          r.dateLocal,
+          r.name,
+          r.purpose,
+          r.category,
+          r.debit ? r.debit.toFixed(2) : "",
+          r.credit ? r.credit.toFixed(2) : "",
+          r.total.toFixed(2),
+          r.currency,
+        ]
+          .map(escapeCsvCell)
+          .join(";"),
+      ),
+    ];
+
+    const blob = new Blob([lines.join("\r\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "operations.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div style={{ padding: 16, fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial" }}>
-      <h1 style={{ margin: "0 0 12px" }}>Операции</h1>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 12,
+        }}
+      >
+        <h1 style={{ margin: 0 }}>Операции</h1>
+        <button
+          type="button"
+          onClick={handleExportCsv}
+          disabled={rows.length === 0}
+          style={{
+            padding: "6px 12px",
+            borderRadius: 4,
+            border: "1px solid #ccc",
+            background: rows.length === 0 ? "#f5f5f5" : "#1976d2",
+            color: rows.length === 0 ? "#999" : "#fff",
+            fontSize: 13,
+            cursor: rows.length === 0 ? "default" : "pointer",
+          }}
+        >
+          Сохранить в CSV
+        </button>
+      </div>
 
       {rows.length === 0 ? (
         <div style={{ color: "#666" }}>Нет данных (сначала нажмите «Открыть страницу» в popup).</div>
