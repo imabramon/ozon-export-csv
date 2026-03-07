@@ -27,14 +27,43 @@ export const useInjectFunction = <F extends (...args: any[]) => any>(
             func,
             args,
           })
-          .then(
-            (results) => {
-              const result = results[0]?.result as ReturnType<F> | undefined;
-              res(result);
-            },
-            rej,
-          );
+          .then((results) => {
+            const result = results[0]?.result as ReturnType<F> | undefined;
+            res(result);
+          }, rej);
       });
     });
   };
+};
+
+type InjectFetchOptions = Omit<RequestInit, "headers" | "body" | "credentials">;
+
+const injectFetch = async <B extends object, R extends any>(
+  url: string,
+  body: B,
+  options?: InjectFetchOptions,
+) => {
+  const headers = new Headers();
+  headers.append("Content-Type", "application/json");
+  headers.append("Accept", "application/json");
+  console.log("calll", "fetch", body);
+  const response = await fetch(url, {
+    ...(options ?? {}),
+    headers,
+    body: JSON.stringify(body),
+    credentials: "include",
+  });
+  if (response.status !== 200) {
+    throw new Error("Запрос не успешен");
+  }
+
+  return response.json()
+};
+
+export const useInjectFetch = () => {
+  return useInjectFunction(injectFetch) as <B extends object, R extends any>(
+    url: string,
+    body: B,
+    options?: InjectFetchOptions,
+  ) => R;
 };
