@@ -57,7 +57,7 @@ const injectFetch = async <B extends object, R extends any>(
     throw new Error("Запрос не успешен");
   }
 
-  return response.json()
+  return response.json() as R;
 };
 
 export const useInjectFetch = () => {
