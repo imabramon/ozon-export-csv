@@ -46,7 +46,6 @@ const injectFetch = async <B extends object, R extends any>(
   const headers = new Headers();
   headers.append("Content-Type", "application/json");
   headers.append("Accept", "application/json");
-  console.log("calll", "fetch", body);
   const response = await fetch(url, {
     ...(options ?? {}),
     headers,
@@ -64,6 +63,6 @@ export const useInjectFetch = () => {
   return useInjectFunction(injectFetch) as <B extends object, R extends any>(
     url: string,
     body: B,
-    options?: InjectFetchOptions,
+    options?: InjectFetchOptions, 
   ) => R;
 };
