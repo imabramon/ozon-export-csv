@@ -1,12 +1,20 @@
-import { useEffectEvent } from "react";
+import { useEffectEvent, useLayoutEffect } from "react";
 
-export const useChromeApi = () => {
-  const openInNewTab = useEffectEvent((pageName: string) => {
+export const useOpenNewTab = () => {
+  const openInNewTab = useEffectEvent((pageName: string, data?: any) => {
     const url = chrome.runtime.getURL(`src/pages/${pageName}/index.html`);
-    chrome.tabs.create({ url });
+    chrome.tabs.create({ url, active: false }, (tab) => {
+      if (tab.id === undefined || data === undefined) return;
+
+      setTimeout(() => {
+        chrome.tabs.sendMessage(tab.id!, data, () => {
+          chrome.tabs.update(tab.id, { active: true });
+        });
+      }, 500);
+    });
   });
 
-  return { openInNewTab };
+  return openInNewTab;
 };
 
 export const useInjectFunction = <F extends (...args: any[]) => any>(
@@ -63,6 +71,27 @@ export const useInjectFetch = () => {
   return useInjectFunction(injectFetch) as <B extends object, R extends any>(
     url: string,
     body: B,
-    options?: InjectFetchOptions, 
+    options?: InjectFetchOptions,
   ) => R;
+};
+
+export const useOnMessage = <T>(callback: (message: T) => void) => {
+  const fn = useEffectEvent(callback);
+
+  useLayoutEffect(() => {
+    const onMessage: (
+      message: any,
+      sender: chrome.runtime.MessageSender,
+      sendResponse: (response?: any) => void,
+    ) => void = (message, _, sendResponse) => {
+      fn(message);
+      sendResponse("OK");
+    };
+
+    chrome.runtime.onMessage.addListener(onMessage);
+
+    return () => {
+        chrome.runtime.onMessage.removeListener(onMessage);
+    }
+  }, []);
 };

@@ -1,101 +1,18 @@
 import {
-  useChromeApi,
+  useOpenNewTab,
   useInjectFetch,
   useInjectFunction,
 } from "@/hooks/useChromeApi";
 import { useEffectEvent, useState } from "react";
+import type {
+  FetchCursorResult,
+  OperationItem,
+  OperationV3Request,
+  OperationV3Response,
+} from "./types";
 
 const OperationV3_URL =
   "https://finance.ozon.ru/apps/pfm/api/operations/groupOperationsV3";
-
-interface OperationV3 {
-  cursorPagination: {
-    cursor: string | null;
-    perPage: number;
-  };
-  filter: {
-    categories: unknown[];
-    effect: string;
-    pfmTags: unknown[];
-    accountTokens: unknown[];
-    timeZone: string;
-  };
-}
-
-interface MoneyAmount {
-  cents: number;
-  currencyName: string;
-}
-
-interface AmountWithSign {
-  amountAbs: MoneyAmount;
-  sign: string;
-}
-
-interface MerchantInfo {
-  logoUrlDark: string;
-  logoUrlLight: string;
-  name: string;
-}
-
-interface OperationMeta {
-  __typename: string;
-  truncatedPan: string;
-}
-
-export interface OperationItem {
-  accountAmount: AmountWithSign;
-  accountCustomName: string | null;
-  accountProductType: string;
-  accountToken: string;
-  cardMerchant: MerchantInfo;
-  cashbackDelayDays: number | null;
-  cashbackStatus: string;
-  categoryGroupName: string;
-  clientAccountsTransferMeta: unknown | null;
-  comment: string | null;
-  coopMemberInfo: unknown | null;
-  counterpartyName: string;
-  groupID: string;
-  groupOperationType: string;
-  isMkkMarked: boolean;
-  isSuitableForMkk: boolean;
-  lastOperationId: string;
-  lastOperationTime: string;
-  merchant: MerchantInfo;
-  merchantCategoryCode: string;
-  merchantCategoryType: string;
-  meta: OperationMeta;
-  originalAmount: AmountWithSign;
-  ozonOrderNumber: string | null;
-  parentOperationId: string | null;
-  points: unknown | null;
-  purpose: string;
-  scheduleId: string | null;
-  scheduleType: string | null;
-  starsPoints: unknown | null;
-  status: string;
-  templateId: string | null;
-  time: string;
-}
-
-interface OperationV3Response {
-  data: {
-    me: {
-      client: {
-        groupOperationsV3: {
-          cursors: {
-            next: string | null;
-            prev: string | null;
-          };
-          items: OperationItem[];
-        };
-      };
-    };
-  };
-}
-
-type FetchCursorResult = [string | null, OperationItem[]];
 
 const getItemAmount = (item: OperationItem) => {
   const sign = item.accountAmount.sign === "NEGATIVE" ? -1 : 1;
@@ -103,7 +20,7 @@ const getItemAmount = (item: OperationItem) => {
 };
 
 export default function App() {
-  const { openInNewTab } = useChromeApi();
+  const openInNewTab = useOpenNewTab();
   const log = useInjectFunction((...args: Parameters<typeof console.log>) => {
     console.log(...args);
   });
@@ -116,12 +33,10 @@ export default function App() {
   const startDate = new Date(startDateStr);
   const endDate = new Date(endDateStr);
 
-  log("calll dates", startDate.toDateString(), endDate.toDateString());
-
   const fetchOperationsByCursor = useEffectEvent(
     async (cursor: string | null = null): Promise<FetchCursorResult> => {
       try {
-        const res = await injectFecth<OperationV3, OperationV3Response>(
+        const res = await injectFecth<OperationV3Request, OperationV3Response>(
           OperationV3_URL,
           {
             cursorPagination: { cursor, perPage: 100 },
@@ -214,7 +129,7 @@ export default function App() {
 
   const onClick = useEffectEvent(async () => {
     const items = await fetchOperationByDates(startDate, endDate);
-    log("calll result", items);
+    openInNewTab("page", items);
   });
 
   return (
@@ -240,8 +155,7 @@ export default function App() {
           />
         </label>
       </div>
-      <button onClick={() => openInNewTab("page")}>Открыть страницу</button>
-      <button onClick={onClick}>Calll</button>
+      <button onClick={onClick}>Открыть страницу</button>
     </div>
   );
 }
