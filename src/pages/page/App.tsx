@@ -113,64 +113,66 @@ export default function App() {
   };
 
   return (
-    <div className="page">
-      <div className="header">
-        <h1 className="pageTitle">Операции</h1>
-        <button
-          type="button"
-          className="btnExport"
-          onClick={handleExportCsv}
-          disabled={rows.length === 0}
-        >
-          Сохранить в CSV
-        </button>
-      </div>
+    <div className="exportPage">
+      <div className="exportPage__card">
+        <header className="exportPage__header">
+          <h1 className="exportPage__title">Операции</h1>
+          <button
+            type="button"
+            className="exportPage__button"
+            onClick={handleExportCsv}
+            disabled={rows.length === 0}
+          >
+            Сохранить в CSV
+          </button>
+        </header>
 
-      {rows.length === 0 ? (
-        <div className="emptyMessage">
-          Нет данных (сначала нажмите «Открыть страницу» в popup).
-        </div>
-      ) : (
-        <div className="tableWrap">
-          <table className="operationsTable">
-            <thead>
-              <tr>
-                <th>Дата (локальная)</th>
-                <th>Название</th>
-                <th>Цель</th>
-                <th>Категория</th>
-                <th className="textRight">Дебит</th>
-                <th className="textRight">Кредит</th>
-                <th className="textRight">Итого</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.key}>
-                  <td>{r.dateLocal}</td>
-                  <td>{r.name}</td>
-                  <td>{r.purpose}</td>
-                  <td>{r.category}</td>
-                  <td className="textRight">{r.debit}</td>
-                  <td className="textRight">{r.credit}</td>
-                  <td
-                    className={`totalCell ${r.total < 0 ? "negative" : "positive"}`}
-                  >
-                    {r.total}
-                  </td>
+        {rows.length === 0 ? (
+          <p className="exportPage__empty">
+            Нет данных (сначала нажмите «Открыть страницу» в popup).
+          </p>
+        ) : (
+          <div className="exportPage__tableWrap">
+            <table className="exportPage__table">
+              <thead>
+                <tr>
+                  <th>Дата (локальная)</th>
+                  <th>Название</th>
+                  <th>Цель</th>
+                  <th>Категория</th>
+                  <th className="exportPage__cellRight">Дебит</th>
+                  <th className="exportPage__cellRight">Кредит</th>
+                  <th className="exportPage__cellRight">Итого</th>
                 </tr>
-              ))}
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.key}>
+                    <td>{r.dateLocal}</td>
+                    <td>{r.name}</td>
+                    <td>{r.purpose}</td>
+                    <td>{r.category}</td>
+                    <td className="exportPage__cellRight">{r.debit}</td>
+                    <td className="exportPage__cellRight">{r.credit}</td>
+                    <td
+                      className={`exportPage__totalCell ${r.total < 0 ? "exportPage__totalCell_negative" : "exportPage__totalCell_positive"}`}
+                    >
+                      {r.total}
+                    </td>
+                  </tr>
+                ))}
 
-              <tr className="totalsRow">
-                <td colSpan={4}>Итого</td>
-                <td className="textRight">{totals.debit}</td>
-                <td className="textRight">{totals.credit}</td>
-                <td className="textRight">{totals.total}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
+                <tr className="exportPage__totalsRow">
+                  <td colSpan={4}>Итого</td>
+                  <td className="exportPage__cellRight">{totals.debit}</td>
+                  <td className="exportPage__cellRight">{totals.credit}</td>
+                  <td className="exportPage__cellRight">{totals.total}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
