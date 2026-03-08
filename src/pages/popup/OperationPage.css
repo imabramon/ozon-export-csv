@@ -43,6 +43,51 @@
    color: #64748b;
 }
 
+.operationsPage__monthSwitch {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 12px;
+   margin-bottom: 14px;
+   padding: 6px 0;
+}
+
+.operationsPage__monthSwitchArrow {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   width: 32px;
+   height: 32px;
+   padding: 0;
+   border: 1px solid #cbd5e1;
+   border-radius: 8px;
+   background: #f8fafc;
+   color: #0f172a;
+   font-size: 18px;
+   line-height: 1;
+   cursor: pointer;
+   transition: background-color 0.15s, border-color 0.15s;
+}
+
+.operationsPage__monthSwitchArrow:hover {
+   background: #e2e8f0;
+   border-color: #94a3b8;
+}
+
+.operationsPage__monthSwitchArrow:disabled {
+   opacity: 0.5;
+   cursor: not-allowed;
+   pointer-events: none;
+}
+
+.operationsPage__monthSwitchLabel {
+   font-size: 14px;
+   font-weight: 600;
+   color: #0f172a;
+   min-width: 140px;
+   text-align: center;
+}
+
 .operationsPage__fields {
    display: flex;
    flex-direction: column;
@@ -90,6 +135,12 @@
    font-weight: 600;
    cursor: pointer;
    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.55);
+}
+
+.operationsPage__button:disabled {
+   opacity: 0.6;
+   cursor: not-allowed;
+   box-shadow: none;
 }
 
 .operationsPage__helper {
