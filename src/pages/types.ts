@@ -84,3 +84,13 @@ export interface OperationV3Response {
     };
   };
 }
+
+export interface Transaction{
+  time: string;
+  name: string;
+  category: string;
+  purpose: string;
+  debit: number;
+  credit: number;
+  amount: number;
+}

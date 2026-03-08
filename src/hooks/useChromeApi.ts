@@ -1,4 +1,4 @@
-import { useEffectEvent, useLayoutEffect } from "react";
+import { useEffectEvent, useLayoutEffect, useState } from "react";
 
 export const useOpenNewTab = () => {
   const openInNewTab = useEffectEvent((pageName: string, data?: any) => {
@@ -91,7 +91,33 @@ export const useOnMessage = <T>(callback: (message: T) => void) => {
     chrome.runtime.onMessage.addListener(onMessage);
 
     return () => {
-        chrome.runtime.onMessage.removeListener(onMessage);
-    }
+      chrome.runtime.onMessage.removeListener(onMessage);
+    };
   }, []);
+};
+
+export const useGetActiveTab = () => {
+  const getActiveTab = useEffectEvent(() => {
+    return new Promise<chrome.tabs.Tab>((res) => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        res(tabs[0]);
+      });
+    });
+  });
+
+  return getActiveTab;
+};
+
+export const useActiveTab = (fn: (currentTab: chrome.tabs.Tab) => void) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const getActiveTab = useGetActiveTab();
+
+  useLayoutEffect(() => {
+    getActiveTab().then((tab) => {
+      fn(tab);
+      setIsLoading(false);
+    });
+  }, []);
+
+  return [isLoading];
 };

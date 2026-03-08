@@ -1,11 +1,14 @@
 import { useMemo, useState } from "react";
-import { OperationItem } from "../popup/types";
+import { Transaction } from "../types";
 import { useOnMessage } from "@/hooks/useChromeApi";
+import "./App.css";
 
 const parseUtc0ToDate = (value: string) => {
   // API time is UTC+0; if timezone is missing, treat as UTC by appending "Z".
   const hasTz =
-    /z$/i.test(value) || /[+-]\d{2}:\d{2}$/.test(value) || /[+-]\d{4}$/.test(value);
+    /z$/i.test(value) ||
+    /[+-]\d{2}:\d{2}$/.test(value) ||
+    /[+-]\d{4}$/.test(value);
   return new Date(hasTz ? value : `${value}Z`);
 };
 
@@ -22,21 +25,6 @@ const formatLocalDateTime = (value: string) => {
   });
 };
 
-const getItemAmountSigned = (item: OperationItem) => {
-  const sign = item.accountAmount.sign === "NEGATIVE" ? -1 : 1;
-  return sign * (item.accountAmount.amountAbs.cents / 100);
-};
-
-const formatMoney = (value: number, currency?: string) => {
-  const abs = Math.abs(value);
-  const sign = value < 0 ? "-" : "";
-  const formatted = abs.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return `${sign}${formatted}${currency ? ` ${currency}` : ""}`;
-};
-
 const escapeCsvCell = (value: unknown) => {
   const s = value === null || value === undefined ? "" : String(value);
   if (/[;"\n\r]/.test(s)) {
@@ -46,26 +34,21 @@ const escapeCsvCell = (value: unknown) => {
 };
 
 export default function App() {
-  const [data, setData] = useState<OperationItem[]>([]);
+  const [data, setData] = useState<Transaction[]>([]);
 
-  useOnMessage<OperationItem[]>((items) => setData(items));
+  useOnMessage<Transaction[]>((items) => setData(items));
 
   const rows = useMemo(() => {
     return data.map((item) => {
-      const total = getItemAmountSigned(item);
-      const debit = total < 0 ? -total : 0;
-      const credit = total > 0 ? total : 0;
-
       return {
-        key: item.lastOperationId ?? `${item.groupID}-${item.time}`,
+        key: item.time,
         dateLocal: formatLocalDateTime(item.time),
-        name: item.merchant?.name || item.cardMerchant?.name || item.counterpartyName || "-",
-        purpose: item.purpose || "-",
-        category: item.categoryGroupName || "-",
-        debit,
-        credit,
-        total,
-        currency: item.accountAmount.amountAbs.currencyName,
+        name: item.name,
+        purpose: item.purpose,
+        category: item.category,
+        debit: item.debit,
+        credit: item.credit,
+        total: item.amount,
       };
     });
   }, [data]);
@@ -80,7 +63,7 @@ export default function App() {
       debit += r.debit;
       credit += r.credit;
       total += r.total;
-      currency ??= r.currency;
+      currency ??= "RUB";
     }
 
     return { debit, credit, total, currency };
@@ -97,7 +80,6 @@ export default function App() {
       "Дебит",
       "Кредит",
       "Итого",
-      "Валюта",
     ];
 
     const lines = [
@@ -111,7 +93,6 @@ export default function App() {
           r.debit ? r.debit.toFixed(2) : "",
           r.credit ? r.credit.toFixed(2) : "",
           r.total.toFixed(2),
-          r.currency,
         ]
           .map(escapeCsvCell)
           .join(";"),
@@ -132,97 +113,59 @@ export default function App() {
   };
 
   return (
-    <div style={{ padding: 16, fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 12,
-          marginBottom: 12,
-        }}
-      >
-        <h1 style={{ margin: 0 }}>Операции</h1>
+    <div className="page">
+      <div className="header">
+        <h1 className="pageTitle">Операции</h1>
         <button
           type="button"
+          className="btnExport"
           onClick={handleExportCsv}
           disabled={rows.length === 0}
-          style={{
-            padding: "6px 12px",
-            borderRadius: 4,
-            border: "1px solid #ccc",
-            background: rows.length === 0 ? "#f5f5f5" : "#1976d2",
-            color: rows.length === 0 ? "#999" : "#fff",
-            fontSize: 13,
-            cursor: rows.length === 0 ? "default" : "pointer",
-          }}
         >
           Сохранить в CSV
         </button>
       </div>
 
       {rows.length === 0 ? (
-        <div style={{ color: "#666" }}>Нет данных (сначала нажмите «Открыть страницу» в popup).</div>
+        <div className="emptyMessage">
+          Нет данных (сначала нажмите «Открыть страницу» в popup).
+        </div>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table
-            style={{
-              borderCollapse: "collapse",
-              width: "100%",
-              minWidth: 980,
-              background: "#fff",
-            }}
-          >
+        <div className="tableWrap">
+          <table className="operationsTable">
             <thead>
               <tr>
-                <th style={thStyle}>Дата (локальная)</th>
-                <th style={thStyle}>Название</th>
-                <th style={thStyle}>Цель</th>
-                <th style={thStyle}>Категория</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>Дебит</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>Кредит</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>Итого</th>
+                <th>Дата (локальная)</th>
+                <th>Название</th>
+                <th>Цель</th>
+                <th>Категория</th>
+                <th className="textRight">Дебит</th>
+                <th className="textRight">Кредит</th>
+                <th className="textRight">Итого</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.key}>
-                  <td style={tdStyle}>{r.dateLocal}</td>
-                  <td style={tdStyle}>{r.name}</td>
-                  <td style={tdStyle}>{r.purpose}</td>
-                  <td style={tdStyle}>{r.category}</td>
-                  <td style={{ ...tdStyle, textAlign: "right", whiteSpace: "nowrap" }}>
-                    {r.debit ? formatMoney(r.debit, r.currency) : ""}
-                  </td>
-                  <td style={{ ...tdStyle, textAlign: "right", whiteSpace: "nowrap" }}>
-                    {r.credit ? formatMoney(r.credit, r.currency) : ""}
-                  </td>
+                  <td>{r.dateLocal}</td>
+                  <td>{r.name}</td>
+                  <td>{r.purpose}</td>
+                  <td>{r.category}</td>
+                  <td className="textRight">{r.debit}</td>
+                  <td className="textRight">{r.credit}</td>
                   <td
-                    style={{
-                      ...tdStyle,
-                      textAlign: "right",
-                      whiteSpace: "nowrap",
-                      color: r.total < 0 ? "#b00020" : "#0a7a0a",
-                    }}
+                    className={`totalCell ${r.total < 0 ? "negative" : "positive"}`}
                   >
-                    {formatMoney(r.total, r.currency)}
+                    {r.total}
                   </td>
                 </tr>
               ))}
 
-              <tr>
-                <td style={{ ...tdStyle, fontWeight: 700 }} colSpan={4}>
-                  Итого
-                </td>
-                <td style={{ ...tdStyle, textAlign: "right", fontWeight: 700, whiteSpace: "nowrap" }}>
-                  {formatMoney(totals.debit, totals.currency)}
-                </td>
-                <td style={{ ...tdStyle, textAlign: "right", fontWeight: 700, whiteSpace: "nowrap" }}>
-                  {formatMoney(totals.credit, totals.currency)}
-                </td>
-                <td style={{ ...tdStyle, textAlign: "right", fontWeight: 700, whiteSpace: "nowrap" }}>
-                  {formatMoney(totals.total, totals.currency)}
-                </td>
+              <tr className="totalsRow">
+                <td colSpan={4}>Итого</td>
+                <td className="textRight">{totals.debit}</td>
+                <td className="textRight">{totals.credit}</td>
+                <td className="textRight">{totals.total}</td>
               </tr>
             </tbody>
           </table>
@@ -232,21 +175,3 @@ export default function App() {
   );
 }
 
-const thStyle: React.CSSProperties = {
-  borderBottom: "1px solid #ddd",
-  padding: "10px 8px",
-  textAlign: "left",
-  fontSize: 13,
-  color: "#222",
-  background: "#fafafa",
-  position: "sticky",
-  top: 0,
-  zIndex: 1,
-};
-
-const tdStyle: React.CSSProperties = {
-  borderBottom: "1px solid #eee",
-  padding: "8px 8px",
-  fontSize: 13,
-  verticalAlign: "top",
-};
