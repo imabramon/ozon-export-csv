@@ -1,7 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Transaction } from "../types";
 import { useOnMessage } from "@/hooks/useChromeApi";
+import { SearchableText } from "@/components/SearchableText";
 import "./App.css";
+
+const DEBOUNCE_MS = 300;
+
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedValue(value), delayMs);
+    return () => clearTimeout(id);
+  }, [value, delayMs]);
+  return debouncedValue;
+}
 
 function initSelectedAll(length: number) {
   return new Set<number>(Array.from({ length }, (_, i) => i));
@@ -37,9 +49,29 @@ const escapeCsvCell = (value: unknown) => {
   return s;
 };
 
+function rowMatchesSearch(
+  r: { dateLocal: string; name: string; purpose: string; category: string; debit: number; credit: number; total: number },
+  search: string,
+): boolean {
+  const q = search.trim().toLowerCase();
+  if (!q) return true;
+  const s = (v: unknown) => String(v ?? "").toLowerCase();
+  return (
+    s(r.dateLocal).includes(q) ||
+    s(r.name).includes(q) ||
+    s(r.purpose).includes(q) ||
+    s(r.category).includes(q) ||
+    s(r.debit).includes(q) ||
+    s(r.credit).includes(q) ||
+    s(r.total).includes(q)
+  );
+}
+
 export default function App() {
   const [data, setData] = useState<Transaction[]>([]);
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+  const [searchInput, setSearchInput] = useState("");
+  const searchQuery = useDebouncedValue(searchInput, DEBOUNCE_MS);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
   useOnMessage<Transaction[]>((items) => {
@@ -61,6 +93,12 @@ export default function App() {
       };
     });
   }, [data]);
+
+  const filteredRows = useMemo(() => {
+    return rows
+      .map((row, originalIndex) => ({ row, originalIndex }))
+      .filter(({ row }) => rowMatchesSearch(row, searchQuery));
+  }, [rows, searchQuery]);
 
   const selectedRows = useMemo(
     () => rows.filter((_, i) => selectedIndices.has(i)),
@@ -92,8 +130,12 @@ export default function App() {
     });
   };
 
-  const allSelected = rows.length > 0 && selectedIndices.size === rows.length;
-  const someSelected = selectedIndices.size > 0;
+  const allSelected =
+    filteredRows.length > 0 &&
+    filteredRows.every(({ originalIndex }) => selectedIndices.has(originalIndex));
+  const someSelected = filteredRows.some(({ originalIndex }) =>
+    selectedIndices.has(originalIndex),
+  );
 
   useEffect(() => {
     const el = selectAllRef.current;
@@ -101,8 +143,15 @@ export default function App() {
   }, [allSelected, someSelected]);
 
   const toggleAll = () => {
-    if (allSelected) setSelectedIndices(new Set());
-    else setSelectedIndices(initSelectedAll(rows.length));
+    setSelectedIndices((prev) => {
+      const next = new Set(prev);
+      if (allSelected) {
+        filteredRows.forEach(({ originalIndex }) => next.delete(originalIndex));
+      } else {
+        filteredRows.forEach(({ originalIndex }) => next.add(originalIndex));
+      }
+      return next;
+    });
   };
 
   const handleExportCsv = () => {
@@ -153,6 +202,14 @@ export default function App() {
       <div className="exportPage__card">
         <header className="exportPage__header">
           <h1 className="exportPage__title">Операции</h1>
+          <input
+            type="search"
+            className="exportPage__search"
+            placeholder="Поиск..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            aria-label="Поиск по операциям"
+          />
           <button
             type="button"
             className="exportPage__button"
@@ -191,32 +248,52 @@ export default function App() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => (
-                  <tr
-                    key={`${i}-${r.key}`}
-                    className={selectedIndices.has(i) ? undefined : "exportPage__row_unselected"}
-                  >
-                    <td className="exportPage__cellCheckbox">
-                      <input
-                        type="checkbox"
-                        checked={selectedIndices.has(i)}
-                        onChange={() => toggleRow(i)}
-                        aria-label={`Строка ${i + 1}`}
-                      />
-                    </td>
-                    <td>{r.dateLocal}</td>
-                    <td>{r.name}</td>
-                    <td>{r.purpose}</td>
-                    <td>{r.category}</td>
-                    <td className="exportPage__cellRight">{r.debit}</td>
-                    <td className="exportPage__cellRight">{r.credit}</td>
-                    <td
-                      className={`exportPage__totalCell ${r.total < 0 ? "exportPage__totalCell_negative" : "exportPage__totalCell_positive"}`}
-                    >
-                      {r.total}
+                {filteredRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="exportPage__emptyCell">
+                      Ничего не найдено
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredRows.map(({ row: r, originalIndex: i }) => (
+                    <tr
+                      key={`${i}-${r.key}`}
+                      className={selectedIndices.has(i) ? undefined : "exportPage__row_unselected"}
+                    >
+                      <td className="exportPage__cellCheckbox">
+                        <input
+                          type="checkbox"
+                          checked={selectedIndices.has(i)}
+                          onChange={() => toggleRow(i)}
+                          aria-label={`Строка ${i + 1}`}
+                        />
+                      </td>
+                      <td>
+                        <SearchableText text={r.dateLocal} searchText={searchQuery} />
+                      </td>
+                      <td>
+                        <SearchableText text={r.name} searchText={searchQuery} />
+                      </td>
+                      <td>
+                        <SearchableText text={r.purpose} searchText={searchQuery} />
+                      </td>
+                      <td>
+                        <SearchableText text={r.category} searchText={searchQuery} />
+                      </td>
+                      <td className="exportPage__cellRight">
+                        <SearchableText text={String(r.debit)} searchText={searchQuery} />
+                      </td>
+                      <td className="exportPage__cellRight">
+                        <SearchableText text={String(r.credit)} searchText={searchQuery} />
+                      </td>
+                      <td
+                        className={`exportPage__totalCell ${r.total < 0 ? "exportPage__totalCell_negative" : "exportPage__totalCell_positive"}`}
+                      >
+                        <SearchableText text={String(r.total)} searchText={searchQuery} />
+                      </td>
+                    </tr>
+                  ))
+                )}
 
                 <tr className="exportPage__totalsRow">
                   <td colSpan={5}>Итого (выбрано: {selectedRows.length})</td>
