@@ -1,52 +1,96 @@
-# React + Vite + CRXJS
+# Ozon Bill v2 — выписка из Ozon банка
 
-This template helps you quickly start developing Chrome extensions with React, TypeScript and Vite. It includes the CRXJS Vite plugin for seamless Chrome extension development.
+Расширение для Chrome, которое помогает выгружать выписку по операциям из [Ozon банка](https://finance.ozon.ru/lk) за выбранный период и экспортировать данные в CSV.
 
-## Features
+Стек: React, TypeScript, Vite, CRXJS (сборка расширения для Chrome).
 
-- React with TypeScript
-- TypeScript support
-- Vite build tool
-- CRXJS Vite plugin integration
-- Chrome extension manifest configuration
+---
 
-## Quick Start
+## Как пользоваться расширением
 
-1. Install dependencies:
+### 1. Установка расширения
+
+- Соберите расширение (см. раздел «Сборка» ниже) или возьмите готовую папку `dist`.
+- Откройте в Chrome страницу `chrome://extensions/`.
+- Включите **«Режим разработчика»** (переключатель справа вверху).
+- Нажмите **«Загрузить распакованное расширение»** и выберите папку **`dist`** из этого проекта.
+
+### 2. Подготовка
+
+- Перейдите на сайт Ozon банка: **https://finance.ozon.ru/lk**
+- Войдите в свой аккаунт (расширение работает только на этой странице).
+
+### 3. Выгрузка выписки за период
+
+- Нажмите на иконку расширения в панели браузера (рядом с адресной строкой).
+- Откроется всплывающее окно **«Выписка из Ozon банка»**.
+- Выберите **период** (даты начала и конца) с помощью календаря или полей ввода.
+- Нажмите кнопку **«Открыть выписку»** (или аналогичную по смыслу).
+- Откроется **новая вкладка** со списком операций за выбранные даты.
+
+### 4. Работа с выпиской во вкладке
+
+- **Поиск** — введите текст в поле поиска, чтобы отфильтровать операции по дате, названию, назначению, категории, сумме и т.п.
+- **Исключить строки Ozon** — при необходимости можно скрыть служебные операции Ozon.
+- **Выбор операций** — отметьте нужные строки или «Выбрать всё» / «Снять всё».
+- **Экспорт в CSV** — нажмите кнопку экспорта, чтобы скачать выбранные операции в виде CSV-файла.
+
+---
+
+## Сборка
+
+### Зависимости
+
+Установите зависимости один раз:
 
 ```bash
 npm install
 ```
 
-2. Start development server:
+### Режим разработки
+
+Запуск сборки в режиме разработки с отслеживанием изменений:
 
 ```bash
 npm run dev
 ```
 
-3. Open Chrome and navigate to `chrome://extensions/`, enable "Developer mode", and load the unpacked extension from the `dist` directory.
+- Собранное расширение будет в папке **`dist`**.
+- После изменения кода расширение пересоберётся автоматически.
+- В `chrome://extensions/` нажмите **«Обновить»** у вашего расширения, чтобы подхватить изменения.
 
-4. Build for production:
+### Продакшен-сборка
+
+Сборка для публикации или распространения:
 
 ```bash
 npm run build
 ```
 
-## Project Structure
+- Расширение собирается в папку **`dist`**.
+- Дополнительно в папке **`release`** создаётся ZIP-архив вида `crx-ozonexportv2-1.0.0.zip` — его можно использовать для установки или загрузки в Chrome Web Store.
 
-- `src/popup/` - Extension popup UI
-- `src/content/` - Content scripts
-- `manifest.config.ts` - Chrome extension manifest configuration
+### Загрузка расширения в Chrome
 
-## Documentation
+1. Откройте **`chrome://extensions/`**.
+2. Включите **«Режим разработчика»**.
+3. Нажмите **«Загрузить распакованное расширение»** и укажите папку **`dist`** (после `npm run dev` или `npm run build`).
 
-- [React Documentation](https://reactjs.org/)
-- [Vite Documentation](https://vitejs.dev/)
-- [CRXJS Documentation](https://crxjs.dev/vite-plugin)
+---
 
-## Chrome Extension Development Notes
+## Структура проекта
 
-- Use `manifest.config.ts` to configure your extension
-- The CRXJS plugin automatically handles manifest generation
-- Content scripts should be placed in `src/content/`
-- Popup UI should be placed in `src/popup/`
+- **`src/pages/popup/`** — интерфейс всплывающего окна (выбор периода, кнопка «Открыть выписку»).
+- **`src/pages/page/`** — страница во вкладке со списком операций, поиском и экспортом в CSV.
+- **`src/components/`** — переиспользуемые компоненты.
+- **`src/hooks/`** — хуки для работы с Chrome API.
+- **`src/utils/`** — утилиты (например, загрузка операций по датам).
+- **`manifest.config.ts`** — конфигурация манифеста расширения Chrome (Manifest v3).
+
+---
+
+## Документация
+
+- [React](https://reactjs.org/)
+- [Vite](https://vitejs.dev/)
+- [CRXJS Vite Plugin](https://crxjs.dev/vite-plugin)
