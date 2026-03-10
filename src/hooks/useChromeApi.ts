@@ -119,5 +119,13 @@ export const useActiveTab = (fn: (currentTab: chrome.tabs.Tab) => void) => {
     });
   }, []);
 
-  return [isLoading];
+  return isLoading;
+};
+
+export const useLog = () => {
+  const log = useInjectFunction((...args: Parameters<typeof console.log>) => {
+    console.log(...args);
+  });
+
+  return log;
 };

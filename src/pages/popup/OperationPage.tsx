@@ -1,8 +1,4 @@
-import {
-  useOpenNewTab,
-  useInjectFetch,
-  useInjectFunction,
-} from "@/hooks/useChromeApi";
+import { useOpenNewTab, useInjectFetch, useLog } from "@/hooks/useChromeApi";
 import { useEffectEvent, useState } from "react";
 import type { Transaction } from "../types";
 
@@ -25,8 +21,18 @@ function toYMD(d: Date): string {
 }
 
 const MONTH_NAMES = [
-  "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
-  "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+  "Январь",
+  "Февраль",
+  "Март",
+  "Апрель",
+  "Май",
+  "Июнь",
+  "Июль",
+  "Август",
+  "Сентябрь",
+  "Октябрь",
+  "Ноябрь",
+  "Декабрь",
 ];
 
 export default function OperationsPage({
@@ -35,10 +41,7 @@ export default function OperationsPage({
   createFetchOperation,
 }: OperationPageProps) {
   const openInNewTab = useOpenNewTab();
-  const log = useInjectFunction((...args: Parameters<typeof console.log>) => {
-    console.log(...args);
-  });
-
+  const log = useLog();
   const injectFecth = useInjectFetch();
 
   const now = new Date();
@@ -92,8 +95,7 @@ export default function OperationsPage({
   const startDate = new Date(startDateStr);
   const endDate = new Date(endDateStr);
 
-  const isExportDisabled =
-    endDateStr > todayStr || startDateStr > endDateStr;
+  const isExportDisabled = endDateStr > todayStr || startDateStr > endDateStr;
 
   const isNextMonthDisabled =
     viewYear > now.getFullYear() ||
