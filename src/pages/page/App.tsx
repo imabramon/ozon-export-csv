@@ -1,7 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Transaction } from "../types";
 import { useOnMessage } from "@/hooks/useChromeApi";
 import "./App.css";
+
+function initSelectedAll(length: number) {
+  return new Set<number>(Array.from({ length }, (_, i) => i));
+}
 
 const parseUtc0ToDate = (value: string) => {
   // API time is UTC+0; if timezone is missing, treat as UTC by appending "Z".
@@ -35,8 +39,13 @@ const escapeCsvCell = (value: unknown) => {
 
 export default function App() {
   const [data, setData] = useState<Transaction[]>([]);
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+  const selectAllRef = useRef<HTMLInputElement>(null);
 
-  useOnMessage<Transaction[]>((items) => setData(items));
+  useOnMessage<Transaction[]>((items) => {
+    setData(items);
+    setSelectedIndices(initSelectedAll(items.length));
+  });
 
   const rows = useMemo(() => {
     return data.map((item) => {
@@ -53,13 +62,18 @@ export default function App() {
     });
   }, [data]);
 
+  const selectedRows = useMemo(
+    () => rows.filter((_, i) => selectedIndices.has(i)),
+    [rows, selectedIndices],
+  );
+
   const totals = useMemo(() => {
     let debit = 0;
     let credit = 0;
     let total = 0;
     let currency: string | undefined = undefined;
 
-    for (const r of rows) {
+    for (const r of selectedRows) {
       debit += r.debit;
       credit += r.credit;
       total += r.total;
@@ -67,10 +81,32 @@ export default function App() {
     }
 
     return { debit, credit, total, currency };
-  }, [rows]);
+  }, [selectedRows]);
+
+  const toggleRow = (index: number) => {
+    setSelectedIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
+  const allSelected = rows.length > 0 && selectedIndices.size === rows.length;
+  const someSelected = selectedIndices.size > 0;
+
+  useEffect(() => {
+    const el = selectAllRef.current;
+    if (el) el.indeterminate = someSelected && !allSelected;
+  }, [allSelected, someSelected]);
+
+  const toggleAll = () => {
+    if (allSelected) setSelectedIndices(new Set());
+    else setSelectedIndices(initSelectedAll(rows.length));
+  };
 
   const handleExportCsv = () => {
-    if (rows.length === 0) return;
+    if (selectedRows.length === 0) return;
 
     const header = [
       "Дата (локальная)",
@@ -84,7 +120,7 @@ export default function App() {
 
     const lines = [
       header.join(";"),
-      ...rows.map((r) =>
+      ...selectedRows.map((r) =>
         [
           r.dateLocal,
           r.name,
@@ -121,7 +157,7 @@ export default function App() {
             type="button"
             className="exportPage__button"
             onClick={handleExportCsv}
-            disabled={rows.length === 0}
+            disabled={selectedRows.length === 0}
           >
             Сохранить в CSV
           </button>
@@ -136,6 +172,15 @@ export default function App() {
             <table className="exportPage__table">
               <thead>
                 <tr>
+                  <th className="exportPage__cellCheckbox">
+                    <input
+                      ref={selectAllRef}
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleAll}
+                      aria-label="Выбрать все"
+                    />
+                  </th>
                   <th>Дата (локальная)</th>
                   <th>Название</th>
                   <th>Цель</th>
@@ -146,8 +191,19 @@ export default function App() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
-                  <tr key={r.key}>
+                {rows.map((r, i) => (
+                  <tr
+                    key={`${i}-${r.key}`}
+                    className={selectedIndices.has(i) ? undefined : "exportPage__row_unselected"}
+                  >
+                    <td className="exportPage__cellCheckbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedIndices.has(i)}
+                        onChange={() => toggleRow(i)}
+                        aria-label={`Строка ${i + 1}`}
+                      />
+                    </td>
                     <td>{r.dateLocal}</td>
                     <td>{r.name}</td>
                     <td>{r.purpose}</td>
@@ -163,7 +219,7 @@ export default function App() {
                 ))}
 
                 <tr className="exportPage__totalsRow">
-                  <td colSpan={4}>Итого</td>
+                  <td colSpan={5}>Итого (выбрано: {selectedRows.length})</td>
                   <td className="exportPage__cellRight">{totals.debit}</td>
                   <td className="exportPage__cellRight">{totals.credit}</td>
                   <td className="exportPage__cellRight">{totals.total}</td>

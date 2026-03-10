@@ -169,6 +169,7 @@ body::-webkit-scrollbar-corner {
 
 .exportPage__table {
   border-collapse: collapse;
+  table-layout: fixed;
   width: 100%;
   min-width: 980px;
   font-size: 13px;
@@ -189,6 +190,25 @@ body::-webkit-scrollbar-corner {
 
 .exportPage__table th.exportPage__cellRight {
   text-align: right;
+}
+
+.exportPage__cellCheckbox {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  text-align: center;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.exportPage__cellCheckbox input {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.exportPage__table tr.exportPage__row_unselected {
+  opacity: 0.55;
 }
 
 .exportPage__table td {
