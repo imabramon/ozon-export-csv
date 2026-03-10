@@ -72,11 +72,13 @@ function operationItemToTransaction(value: OperationItem): Transaction {
     value.purpose ||
     value.categoryGroupName;
 
+  const comment = value.comment ? `: ${value.comment}` : "";
+
   return {
     time: value.time,
     name,
     category: value.categoryGroupName,
-    purpose: value.purpose,
+    purpose: value.purpose + comment,
     debit,
     credit,
     amount,
@@ -150,4 +152,3 @@ export const createFetchOperationByDates =
 
     return result.map(operationItemToTransaction);
   };
-
