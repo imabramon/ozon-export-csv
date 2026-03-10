@@ -128,6 +128,22 @@ body::-webkit-scrollbar-corner {
   color: #0f172a;
 }
 
+.exportPage__checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #0f172a;
+  cursor: pointer;
+  user-select: none;
+}
+
+.exportPage__checkboxLabel input {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
 .exportPage__button {
   padding: 8px 12px;
   border-radius: 999px;

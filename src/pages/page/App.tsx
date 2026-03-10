@@ -71,8 +71,14 @@ export default function App() {
   const [data, setData] = useState<Transaction[]>([]);
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
   const [searchInput, setSearchInput] = useState("");
+  const [excludeOzonRows, setExcludeOzonRows] = useState(false);
   const searchQuery = useDebouncedValue(searchInput, DEBOUNCE_MS);
   const selectAllRef = useRef<HTMLInputElement>(null);
+
+  const isOzonRow = (name: string, category: string, purpose: string) => {
+    const s = (v: string) => (v ?? "").trim().toLowerCase();
+    return s(name) === "ozon" && s(category) === "ozon" && s(purpose) === "ozon";
+  };
 
   useOnMessage<Transaction[]>((items) => {
     setData(items);
@@ -154,6 +160,21 @@ export default function App() {
     });
   };
 
+  const handleExcludeOzonChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setExcludeOzonRows(checked);
+    setSelectedIndices((prev) => {
+      const next = new Set(prev);
+      rows.forEach((row, i) => {
+        if (isOzonRow(row.name, row.category, row.purpose)) {
+          if (checked) next.delete(i);
+          else next.add(i);
+        }
+      });
+      return next;
+    });
+  };
+
   const handleExportCsv = () => {
     if (selectedRows.length === 0) return;
 
@@ -210,6 +231,15 @@ export default function App() {
             onChange={(e) => setSearchInput(e.target.value)}
             aria-label="Поиск по операциям"
           />
+          <label className="exportPage__checkboxLabel">
+            <input
+              type="checkbox"
+              checked={excludeOzonRows}
+              onChange={handleExcludeOzonChange}
+              aria-label="Исключить строки Ozon из выгрузки"
+            />
+            Исключить строки Ozon из выгрузки
+          </label>
           <button
             type="button"
             className="exportPage__button"
