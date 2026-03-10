@@ -211,7 +211,8 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "operations.csv";
+    const exportDate = new Date().toISOString().slice(0, 10);
+    a.download = `operations_${exportDate}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
